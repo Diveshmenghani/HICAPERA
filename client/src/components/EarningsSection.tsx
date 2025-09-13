@@ -102,39 +102,62 @@ export default function EarningsSection() {
   }, [isConnected, account, getUserInfo, calculateSelfProfit]);
 
   const handleClaimEarnings = async () => {
-    if (!isConnected) {
-      toast({
-        title: "Wallet Not Connected",
-        description: "Please connect your wallet first",
-        variant: "destructive",
-      });
-      return;
-    }
+    try {
+      if (!isConnected) {
+        toast({
+          title: "⚠️ Wallet Not Connected",
+          description: "Please connect your MetaMask wallet to claim earnings",
+          variant: "destructive",
+        });
+        return;
+      }
 
-    if (parseFloat(earnings.totalClaimable) <= 0) {
-      toast({
-        title: "No Earnings",
-        description: "You don't have any earnings to claim",
-        variant: "destructive",
-      });
-      return;
-    }
+      if (parseFloat(earnings.totalClaimable) <= 0) {
+        toast({
+          title: "💰 No Earnings Available",
+          description: "You don't have any earnings to claim yet. Start investing to earn profits!",
+          variant: "destructive",
+        });
+        return;
+      }
 
-    const result = await claimEarnings();
-    
-    if (result.success) {
+      if (parseFloat(earnings.remainingLimit) <= 0) {
+        toast({
+          title: "🚫 Withdrawal Limit Reached",
+          description: "You've reached your 2x withdrawal limit. Consider making new investments.",
+          variant: "destructive",
+        });
+        return;
+      }
+
       toast({
-        title: "Earnings Claimed",
-        description: `Successfully claimed $${earnings.totalClaimable} USDT`,
+        title: "🔄 Claiming Earnings...",
+        description: "Please confirm the transaction in your wallet",
       });
-      // Reload earnings data after successful claim
-      setTimeout(() => {
-        window.location.reload(); // Simple refresh for demo
-      }, 2000);
-    } else {
+
+      const result = await claimEarnings();
+      
+      if (result.success) {
+        toast({
+          title: "🎉 Earnings Claimed Successfully!",
+          description: `Successfully claimed $${earnings.totalClaimable} USDT to your wallet`,
+        });
+        // Reload earnings data after successful claim
+        setTimeout(() => {
+          window.location.reload(); // Simple refresh for demo
+        }, 2000);
+      } else {
+        toast({
+          title: "❌ Claim Failed",
+          description: result.error || "Transaction failed. Please check your wallet and try again.",
+          variant: "destructive",
+        });
+      }
+    } catch (error: any) {
+      console.error('Claim earnings error:', error);
       toast({
-        title: "Claim Failed",
-        description: result.error || "An error occurred while claiming earnings",
+        title: "💥 Claim Error",
+        description: "Something went wrong while claiming earnings. Please try again.",
         variant: "destructive",
       });
     }

@@ -66,51 +66,85 @@ export default function InvestmentSection() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!isConnected) {
-      toast({
-        title: "Wallet Not Connected",
-        description: "Please connect your wallet first",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    const investmentAmount = parseFloat(amount);
-    if (isNaN(investmentAmount) || investmentAmount < 100) {
-      toast({
-        title: "Invalid Amount",
-        description: "Minimum investment is $100 USDT",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (!deadline) {
-      toast({
-        title: "Missing Deadline",
-        description: "Please set a transaction deadline",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    const result = await investAmount(investmentAmount, deadline);
-    
-    if (result.success) {
-      toast({
-        title: "Investment Successful",
-        description: `Invested $${amount} USDT successfully`,
-      });
-      setAmount('');
-      // Reload balance
-      const balanceResult = await getUSDTBalance(account);
-      if (balanceResult.success) {
-        setUsdtBalance(parseFloat(balanceResult.data).toFixed(2));
+    try {
+      if (!isConnected) {
+        toast({
+          title: "⚠️ Wallet Not Connected",
+          description: "Please connect your MetaMask wallet to invest",
+          variant: "destructive",
+        });
+        return;
       }
-    } else {
+
+      const investmentAmount = parseFloat(amount);
+      if (isNaN(investmentAmount) || investmentAmount <= 0) {
+        toast({
+          title: "❌ Invalid Amount",
+          description: "Please enter a valid investment amount",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (investmentAmount < 100) {
+        toast({
+          title: "💰 Minimum Investment Required",
+          description: "Minimum investment is $100 USDT. Please increase your amount.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (!deadline) {
+        toast({
+          title: "⏰ Missing Deadline",
+          description: "Please set a transaction deadline for security",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Check if user has enough balance
+      const currentBalance = parseFloat(usdtBalance);
+      if (currentBalance < investmentAmount) {
+        toast({
+          title: "💸 Insufficient Balance",
+          description: `You need $${investmentAmount} USDT but only have $${currentBalance} USDT`,
+          variant: "destructive",
+        });
+        return;
+      }
+
       toast({
-        title: "Investment Failed",
-        description: result.error || "An error occurred during investment",
+        title: "🔄 Processing Investment...",
+        description: "Please confirm the transaction in your wallet",
+      });
+
+      const result = await investAmount(investmentAmount, deadline);
+      
+      if (result.success) {
+        toast({
+          title: "✅ Investment Successful!",
+          description: `Successfully invested $${amount} USDT. Start earning profits now!`,
+        });
+        setAmount('');
+        // Reload balance
+        const balanceResult = await getUSDTBalance(account);
+        if (balanceResult.success) {
+          setUsdtBalance(parseFloat(balanceResult.data).toFixed(2));
+        }
+      } else {
+        toast({
+          title: "❌ Investment Failed",
+          description: result.error || "Transaction failed. Please check your wallet and try again.",
+          variant: "destructive",
+        });
+      }
+    } catch (error: any) {
+      console.error('Investment error:', error);
+      toast({
+        title: "💥 Investment Error",
+        description: "Something went wrong with your investment. Please try again.",
         variant: "destructive",
       });
     }

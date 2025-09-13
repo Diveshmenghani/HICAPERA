@@ -17,36 +17,54 @@ export default function RegistrationSection() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!isConnected) {
-      toast({
-        title: "Wallet Not Connected",
-        description: "Please connect your wallet first",
-        variant: "destructive",
-      });
-      return;
-    }
+    try {
+      if (!isConnected) {
+        toast({
+          title: "⚠️ Wallet Not Connected",
+          description: "Please connect your MetaMask wallet first to continue",
+          variant: "destructive",
+        });
+        return;
+      }
 
-    if (!referrerAddress || !isValidAddress(referrerAddress)) {
-      toast({
-        title: "Invalid Address",
-        description: "Please enter a valid referrer address",
-        variant: "destructive",
-      });
-      return;
-    }
+      if (!referrerAddress || !referrerAddress.trim()) {
+        toast({
+          title: "❌ Missing Referrer Address",
+          description: "Please enter a referrer address to register",
+          variant: "destructive",
+        });
+        return;
+      }
 
-    const result = await registerUser(referrerAddress);
-    
-    if (result.success) {
+      if (!isValidAddress(referrerAddress)) {
+        toast({
+          title: "❌ Invalid Ethereum Address",
+          description: "The referrer address must be a valid Ethereum address (0x...)",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const result = await registerUser(referrerAddress);
+      
+      if (result.success) {
+        toast({
+          title: "🎉 Registration Successful!",
+          description: "Welcome to HicaperaMLM! You can now start investing.",
+        });
+        setReferrerAddress('');
+      } else {
+        toast({
+          title: "❌ Registration Failed",
+          description: result.error || "Transaction failed. Please try again or check your wallet.",
+          variant: "destructive",
+        });
+      }
+    } catch (error: any) {
+      console.error('Registration error:', error);
       toast({
-        title: "Registration Successful",
-        description: "Welcome to HicaperaMLM! You can now start investing.",
-      });
-      setReferrerAddress('');
-    } else {
-      toast({
-        title: "Registration Failed",
-        description: result.error || "An error occurred during registration",
+        title: "💥 Unexpected Error",
+        description: "Something went wrong. Please refresh and try again.",
         variant: "destructive",
       });
     }

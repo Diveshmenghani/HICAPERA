@@ -89,15 +89,44 @@ class Web3Service {
   }
 
   toWei(amount) {
-    return this.web3?.utils.toWei(amount.toString(), 'ether');
+    try {
+      if (!this.web3 && typeof window.ethereum !== 'undefined') {
+        this.web3 = new Web3(window.ethereum);
+      }
+      return this.web3?.utils.toWei(amount.toString(), 'ether');
+    } catch (error) {
+      console.error('Error converting to wei:', error);
+      return null;
+    }
   }
 
   fromWei(amount) {
-    return this.web3?.utils.fromWei(amount.toString(), 'ether');
+    try {
+      if (!this.web3 && typeof window.ethereum !== 'undefined') {
+        this.web3 = new Web3(window.ethereum);
+      }
+      return this.web3?.utils.fromWei(amount.toString(), 'ether');
+    } catch (error) {
+      console.error('Error converting from wei:', error);
+      return '0';
+    }
   }
 
   isValidAddress(address) {
-    return this.web3?.utils.isAddress(address) || false;
+    try {
+      // Initialize Web3 if not already initialized
+      if (!this.web3) {
+        if (typeof window.ethereum !== 'undefined') {
+          this.web3 = new Web3(window.ethereum);
+        } else {
+          return false; // No MetaMask available
+        }
+      }
+      return this.web3?.utils.isAddress(address) || false;
+    } catch (error) {
+      console.error('Error validating address:', error);
+      return false;
+    }
   }
 }
 

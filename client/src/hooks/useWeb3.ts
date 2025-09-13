@@ -25,8 +25,9 @@ export function useWeb3(): UseWeb3Return {
         setAccount(web3Service.getAccount());
         setIsConnected(true);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Check connection failed:', error);
+      setError(error.message || 'Failed to check wallet connection');
     }
   }, []);
 
@@ -41,10 +42,13 @@ export function useWeb3(): UseWeb3Return {
         setAccount(result.account);
         setIsConnected(true);
       } else {
-        setError(result.error);
+        setError(result.error || 'Failed to connect wallet');
+        console.error('Wallet connection failed:', result.error);
       }
-    } catch (error) {
-      setError(error.message);
+    } catch (error: any) {
+      const errorMessage = error.message || 'Unknown error occurred';
+      setError(errorMessage);
+      console.error('Wallet connection error:', error);
     } finally {
       setIsLoading(false);
     }

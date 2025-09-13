@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { useWeb3 } from '../hooks/useWeb3';
 
 export default function Navigation() {
-  const { account, isConnected, isLoading, connectWallet } = useWeb3();
+  const { account, isConnected, isLoading, connectWallet, error } = useWeb3();
 
   const scrollToSection = (sectionId: string) => {
     const element = document.getElementById(sectionId);
