@@ -1,0 +1,185 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: hsl(240, 10%, 4%);
+  --foreground: hsl(0, 0%, 95%);
+  --card: hsl(240, 6%, 8%);
+  --card-foreground: hsl(0, 0%, 90%);
+  --popover: hsl(240, 6%, 8%);
+  --popover-foreground: hsl(0, 0%, 95%);
+  --primary: hsl(195, 100%, 50%);
+  --primary-foreground: hsl(240, 10%, 4%);
+  --secondary: hsl(120, 100%, 35%);
+  --secondary-foreground: hsl(240, 10%, 4%);
+  --muted: hsl(240, 6%, 12%);
+  --muted-foreground: hsl(0, 0%, 65%);
+  --accent: hsl(262, 83%, 58%);
+  --accent-foreground: hsl(0, 0%, 95%);
+  --destructive: hsl(0, 63%, 31%);
+  --destructive-foreground: hsl(0, 0%, 95%);
+  --border: hsl(240, 6%, 15%);
+  --input: hsl(240, 6%, 12%);
+  --ring: hsl(195, 100%, 50%);
+  --font-sans: 'Inter', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+  --radius: 0.75rem;
+}
+
+.dark {
+  --background: hsl(240, 10%, 4%);
+  --foreground: hsl(0, 0%, 95%);
+  --card: hsl(240, 6%, 8%);
+  --card-foreground: hsl(0, 0%, 90%);
+  --popover: hsl(240, 6%, 8%);
+  --popover-foreground: hsl(0, 0%, 95%);
+  --primary: hsl(195, 100%, 50%);
+  --primary-foreground: hsl(240, 10%, 4%);
+  --secondary: hsl(120, 100%, 35%);
+  --secondary-foreground: hsl(240, 10%, 4%);
+  --muted: hsl(240, 6%, 12%);
+  --muted-foreground: hsl(0, 0%, 65%);
+  --accent: hsl(262, 83%, 58%);
+  --accent-foreground: hsl(0, 0%, 95%);
+  --destructive: hsl(0, 63%, 31%);
+  --destructive-foreground: hsl(0, 0%, 95%);
+  --border: hsl(240, 6%, 15%);
+  --input: hsl(240, 6%, 12%);
+  --ring: hsl(195, 100%, 50%);
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: var(--font-sans);
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+@layer components {
+  .glass-card {
+    @apply bg-white/5 backdrop-blur-md border border-white/10;
+  }
+
+  .neon-border {
+    border: 2px solid transparent;
+    background: linear-gradient(var(--card), var(--card)) padding-box,
+                linear-gradient(45deg, hsl(var(--primary)), hsl(var(--secondary))) border-box;
+  }
+
+  .glitch-text {
+    @apply relative font-bold;
+  }
+
+  .glitch-text::before,
+  .glitch-text::after {
+    content: attr(data-text);
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+  }
+
+  .glitch-text::before {
+    animation: glitch 2s infinite;
+    color: hsl(var(--primary));
+    z-index: -1;
+  }
+
+  .glitch-text::after {
+    animation: glitch 3s infinite;
+    color: hsl(var(--secondary));
+    z-index: -2;
+  }
+
+  .hover-tilt {
+    transition: transform 0.3s ease;
+  }
+
+  .hover-tilt:hover {
+    transform: perspective(1000px) rotateX(5deg) rotateY(5deg) scale(1.02);
+  }
+
+  .particle {
+    position: absolute;
+    background: hsl(var(--primary));
+    border-radius: 50%;
+    opacity: 0.1;
+    animation: float 8s infinite linear;
+  }
+}
+
+@keyframes float {
+  0%, 100% { 
+    transform: translateY(0px); 
+  }
+  50% { 
+    transform: translateY(-20px); 
+  }
+}
+
+@keyframes pulse-neon {
+  from { 
+    box-shadow: 0 0 20px hsl(var(--primary)); 
+  }
+  to { 
+    box-shadow: 0 0 30px hsl(var(--primary)), 0 0 40px hsl(var(--primary)); 
+  }
+}
+
+@keyframes glitch {
+  0%, 100% { 
+    transform: translate(0); 
+  }
+  20% { 
+    transform: translate(-2px, 2px); 
+  }
+  40% { 
+    transform: translate(-2px, -2px); 
+  }
+  60% { 
+    transform: translate(2px, 2px); 
+  }
+  80% { 
+    transform: translate(2px, -2px); 
+  }
+}
+
+@keyframes tilt {
+  0%, 100% { 
+    transform: rotate(0deg); 
+  }
+  25% { 
+    transform: rotate(1deg); 
+  }
+  75% { 
+    transform: rotate(-1deg); 
+  }
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+.animate-pulse-neon {
+  animation: pulse-neon 2s ease-in-out infinite alternate;
+}
+
+.animate-glitch {
+  animation: glitch 1s linear infinite;
+}
+
+.animate-tilt {
+  animation: tilt 10s infinite linear;
+}
