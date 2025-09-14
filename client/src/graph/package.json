@@ -1,0 +1,16 @@
+{
+  "name": "hicaperasubgraph",
+  "license": "UNLICENSED",
+  "scripts": {
+    "codegen": "graph codegen",
+    "build": "graph build",
+    "deploy": "graph deploy --node https://api.thegraph.com/deploy/ --ipfs https://api.thegraph.com/ipfs/ YOUR_GITHUB_USERNAME/hicaperasubgraph",
+    "create-local": "graph create --node http://localhost:8020/ YOUR_GITHUB_USERNAME/hicaperasubgraph",
+    "remove-local": "graph remove --node http://localhost:8020/ YOUR_GITHUB_USERNAME/hicaperasubgraph",
+    "deploy-local": "graph deploy --node http://localhost:8020/ --ipfs http://localhost:5001 YOUR_GITHUB_USERNAME/hicaperasubgraph"
+  },
+  "dependencies": {
+    "@graphprotocol/graph-cli": "0.46.1",
+    "@graphprotocol/graph-ts": "0.29.1"
+  }
+}

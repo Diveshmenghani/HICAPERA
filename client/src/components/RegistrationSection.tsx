@@ -1,17 +1,25 @@
-import { useState } from 'react';
+import React, { useState, useContext } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { useWeb3 } from '../hooks/useWeb3';
-import { useContract } from '../hooks/useContract';
+import { StateContext } from '@/contexts/StateContext';
 import { useToast } from '@/hooks/use-toast';
 
 export default function RegistrationSection() {
   const [referrerAddress, setReferrerAddress] = useState('');
-  const { account, isConnected, isValidAddress } = useWeb3();
-  const { registerUser, isLoading } = useContract();
+  const stateContext = useContext(StateContext);
+  
+  // Safely destructure properties from StateContext with null check
+  const { 
+    address, 
+    connectWallet, 
+    isConnected, 
+    isValidAddress, 
+    registerUser, 
+    isLoading 
+  } = stateContext || {}; // Provide empty object as fallback
   const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -19,12 +27,24 @@ export default function RegistrationSection() {
 
     try {
       if (!isConnected) {
-        toast({
-          title: "⚠️ Wallet Not Connected",
-          description: "Please connect your MetaMask wallet first to continue",
-          variant: "destructive",
-        });
-        return;
+        try {
+          if (!connectWallet) {
+            toast({
+              title: "⚠️ Error",
+              description: "Wallet connection service not available",
+              variant: "destructive",
+            });
+            return;
+          }
+          await connectWallet();
+        } catch (error) {
+          toast({
+            title: "⚠️ Wallet Not Connected",
+            description: "Please connect your MetaMask wallet first to continue",
+            variant: "destructive",
+          });
+          return;
+        }
       }
 
       if (!referrerAddress || !referrerAddress.trim()) {
@@ -36,10 +56,28 @@ export default function RegistrationSection() {
         return;
       }
 
+      if (!isValidAddress) {
+        toast({
+          title: "⚠️ Error",
+          description: "Address validation service not available",
+          variant: "destructive",
+        });
+        return;
+      }
+
       if (!isValidAddress(referrerAddress)) {
         toast({
           title: "❌ Invalid Ethereum Address",
           description: "The referrer address must be a valid Ethereum address (0x...)",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (!registerUser) {
+        toast({
+          title: "⚠️ Error",
+          description: "Registration service not available",
           variant: "destructive",
         });
         return;
@@ -107,7 +145,7 @@ export default function RegistrationSection() {
                   <Input
                     id="userAddress"
                     type="text"
-                    value={account || ''}
+                    value={address || ''}
                     readOnly
                     placeholder="Connect wallet first"
                     className="bg-muted text-muted-foreground border-border"
@@ -117,11 +155,11 @@ export default function RegistrationSection() {
 
                 <Button
                   type="submit"
-                  disabled={isLoading || !isConnected}
+                  disabled={!!isLoading || !isConnected}
                   className="w-full neon-border hover:bg-primary/10 py-4 font-semibold"
                   data-testid="button-register"
                 >
-                  {isLoading ? (
+                  {!!isLoading ? (
                     <>
                       <div className="animate-spin w-4 h-4 border-2 border-primary/30 border-t-primary rounded-full mr-2" />
                       Registering...

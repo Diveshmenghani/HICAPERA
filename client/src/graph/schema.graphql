@@ -1,0 +1,68 @@
+type User @entity {
+  "The user's wallet address"
+  id: ID!
+
+  "The user's referrer. Null for the owner."
+  referrer: User
+
+  "A derived list of users who have this user as their referrer (direct downline)."
+  referrals: [User!]! @derivedFrom(field: "referrer")
+
+  "The total cumulative amount of USDT this user has invested."
+  totalInvestment: BigInt!
+
+  "The total cumulative amount of USDT this user has withdrawn."
+  totalWithdrawn: BigInt!
+
+  "The user's maximum withdrawal limit (2X their total investment)."
+  maxWithdrawalLimit: BigInt!
+
+  "The timestamp when the user registered."
+  registrationTimestamp: BigInt!
+
+  "A list of all investment transactions made by this user."
+  investments: [Investment!]! @derivedFrom(field: "user")
+
+  "A list of all earning claim transactions made by this user."
+  claims: [Claim!]! @derivedFrom(field: "user")
+}
+
+type Investment @entity {
+  "Unique ID: transaction hash + log index"
+  id: ID!
+
+  "The user who made the investment."
+  user: User!
+
+  "The amount of USDT invested in this transaction."
+  amount: BigInt!
+
+  "The timestamp of the investment."
+  timestamp: BigInt!
+
+  "The hash of the transaction."
+  transactionHash: Bytes!
+}
+
+type Claim @entity {
+  "Unique ID: transaction hash + log index"
+  id: ID!
+
+  "The user who claimed the earnings."
+  user: User!
+
+  "The total amount withdrawn in this transaction."
+  totalAmount: BigInt!
+
+  "The portion of the withdrawal that came from self-profit."
+  selfProfit: BigInt!
+
+  "The portion of the withdrawal that came from referral rewards."
+  referralProfit: BigInt!
+
+  "The timestamp of the claim."
+  timestamp: BigInt!
+
+  "The hash of the transaction."
+  transactionHash: Bytes!
+}

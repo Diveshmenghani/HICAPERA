@@ -1,9 +1,11 @@
+import { useContext } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
-import { useWeb3 } from '../hooks/useWeb3';
+import { StateContext } from '@/contexts/StateContext';
 
 export default function Navigation() {
-  const { account, isConnected, isLoading, connectWallet, error } = useWeb3();
+  const stateContext = useContext(StateContext);
+  const { address, isConnected, isLoading, connectWallet } = stateContext || {};
 
   const scrollToSection = (sectionId: string) => {
     const element = document.getElementById(sectionId);
@@ -61,7 +63,7 @@ export default function Navigation() {
             {isLoading ? (
               'Connecting...'
             ) : isConnected ? (
-              account ? `${account.substring(0, 6)}...${account.substring(38)}` : 'Connected'
+              address ? `${address.substring(0, 6)}...${address.substring(38)}` : 'Connected'
             ) : (
               'Connect Wallet'
             )}

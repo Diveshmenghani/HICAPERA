@@ -1,0 +1,30 @@
+specVersion: 0.0.5
+schema:
+  file: ./schema.graphql
+dataSources:
+  - kind: ethereum
+    name: HicaperaMLM
+    network: bsc
+    source:
+      address: "0x4B294b9bA852c78BC7C33Ec13C0825b23a83A244"
+      abi: HicaperaMLM
+      startBlock: 1
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      entities:
+        - User
+        - Investment
+        - Claim
+      abis:
+        - name: HicaperaMLM
+          file: ./HicaperaMLM.abi.json
+      eventHandlers:
+        - event: Registered(indexed address,indexed address)
+          handler: handleRegistered
+        - event: Invested(indexed address,uint256)
+          handler: handleInvested
+        - event: EarningsClaimed(indexed address,uint256,uint256,uint256)
+          handler: handleEarningsClaimed
+      file: ./src/mapping.ts

@@ -1,9 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useContext } from 'react';
 import { motion } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import { useWeb3 } from '../hooks/useWeb3';
-import { useContract } from '../hooks/useContract';
+import { StateContext } from '@/contexts/StateContext';
 
 interface UserStats {
   totalInvestment: string;
@@ -14,8 +13,7 @@ interface UserStats {
 }
 
 export default function DashboardSection() {
-  const { account, isConnected } = useWeb3();
-  const { getUserInfo, calculateSelfProfit } = useContract();
+  const { address, isConnected, getUserInfo, calculateSelfProfit } = useContext(StateContext) || {};
   const [userStats, setUserStats] = useState<UserStats>({
     totalInvestment: '0.00',
     totalEarnings: '0.00',
@@ -32,12 +30,12 @@ export default function DashboardSection() {
 
   useEffect(() => {
     const loadUserData = async () => {
-      if (!isConnected || !account) return;
+      if (!isConnected || !address) return;
 
       try {
         const [userInfoResult, profitResult] = await Promise.all([
-          getUserInfo(account),
-          calculateSelfProfit(account)
+          getUserInfo?.(address),
+          calculateSelfProfit?.(address)
         ]);
 
         if (userInfoResult.success) {
@@ -62,7 +60,7 @@ export default function DashboardSection() {
     };
 
     loadUserData();
-  }, [isConnected, account, getUserInfo, calculateSelfProfit]);
+  }, [isConnected, address, getUserInfo, calculateSelfProfit]);
 
   const statsCards = [
     {

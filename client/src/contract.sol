@@ -1,0 +1,218 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.18;
+
+import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.9.3/contracts/token/ERC20/utils/SafeERC20.sol";
+import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.9.3/contracts/security/ReentrancyGuard.sol";
+import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.9.3/contracts/security/Pausable.sol";
+import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.9.3/contracts/access/Ownable.sol";
+import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.9.3/contracts/token/ERC20/IERC20.sol";
+import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.9.3/contracts/utils/math/Math.sol";
+
+/*
+ * --- SECURITY FEATURES ---
+ * - Simplified Registration: Note: This is more convenient but vulnerable to front-running.
+ * - Safe Precision Math: Uses OpenZeppelin's Math.mulDiv for safe multiplication and division.
+ * - Static Analysis Best Practices: Incorporates patterns to address common findings from tools like Slither and solhint.
+ * - Deadline Protection, Pausable, SafeERC20, Full Re-entrancy Protection.
+ */
+contract HicaperaMLM is Ownable, Pausable, ReentrancyGuard {
+    using SafeERC20 for IERC20;
+    using Math for uint256;
+
+    // --- State Variables ---
+    IERC20 public usdtToken;
+
+    struct User {
+        bool isRegistered;
+        address referrer;
+        uint256 totalInvestment;
+        uint256 totalWithdrawn;
+        uint256 maxWithdrawalLimit; // totalInvestment * 2
+        uint256 lastProfitClaimTimestamp;
+        uint256 registrationTimestamp;
+        uint256 pendingReferralRewards;
+        address[] referrals;
+    }
+
+    mapping(address => User) public users;
+
+    uint256[] public levelPercentages;
+    uint256[] public selfProfitRates;
+    
+    // --- Constants ---
+    uint256 public constant PRECISION_FACTOR = 1e18;
+    uint256 public constant MINIMUM_INVESTMENT = 100 * 1e18;
+    uint256 public constant MONTH_IN_SECONDS = 30 days;
+    uint256 public constant YEAR_IN_SECONDS = 365 days;
+    uint256 public constant MAX_DISTRIBUTION_DEPTH = 30;
+
+    // --- Events ---
+    event Registered(address indexed user, address indexed referrer);
+    event Invested(address indexed user, uint256 amount);
+    event EarningsClaimed(address indexed user, uint256 totalAmount, uint256 selfProfit, uint256 referralProfit);
+    event ReferralIncomeDistributed(address indexed fromUser, address indexed toUser, uint256 amount, uint256 level);
+
+    constructor(address _usdtTokenAddress, address _initialOwner) {
+        usdtToken = IERC20(_usdtTokenAddress);
+        transferOwnership(_initialOwner);
+
+        users[_initialOwner] = User({
+            isRegistered: true, referrer: address(0), totalInvestment: 0, totalWithdrawn: 0,
+            maxWithdrawalLimit: 0, lastProfitClaimTimestamp: block.timestamp,
+            registrationTimestamp: block.timestamp, pendingReferralRewards: 0,
+            referrals: new address[](0)
+        });
+        emit Registered(_initialOwner, address(0));
+
+        // Initialize referral level percentages based on PDF
+        levelPercentages.push(600 * PRECISION_FACTOR / 10000);   // Lvl 1: 6%
+        levelPercentages.push(400 * PRECISION_FACTOR / 10000);   // Lvl 2: 4%
+        levelPercentages.push(300 * PRECISION_FACTOR / 10000);   // Lvl 3: 3%
+        levelPercentages.push(200 * PRECISION_FACTOR / 10000);   // Lvl 4: 2%
+        levelPercentages.push(100 * PRECISION_FACTOR / 10000);   // Lvl 5: 1%
+        for(uint i = 0; i < 5; i++) { levelPercentages.push(75 * PRECISION_FACTOR / 10000); } // Lvl 6-10: 0.75%
+        for(uint i = 0; i < 5; i++) { levelPercentages.push(50 * PRECISION_FACTOR / 10000); } // Lvl 11-15: 0.50%
+        for(uint i = 0; i < 5; i++) { levelPercentages.push(25 * PRECISION_FACTOR / 10000); } // Lvl 16-20: 0.25%
+        for(uint i = 0; i < 10; i++) { levelPercentages.push(125 * PRECISION_FACTOR / 100000); } // Lvl 21-30: 0.125%
+
+        // Initialize self-profit rates
+        selfProfitRates.push(7 * PRECISION_FACTOR / 100);   // Year 1: 7%
+        selfProfitRates.push(10 * PRECISION_FACTOR / 100);  // Year 2: 10%
+        selfProfitRates.push(12 * PRECISION_FACTOR / 100);  // Year 3: 12%
+        selfProfitRates.push(12 * PRECISION_FACTOR / 100);  // Year 4: 12%
+    }
+    
+    // Pausable Control
+    function pause() external onlyOwner { _pause(); }
+    function unpause() external onlyOwner { _unpause(); }
+
+    // Core Public Functions 
+   function register(address _referrer, bytes32 _nonce, bytes calldata _signature) external whenNotPaused {
+        require(_referrer != address(0), "Hicapera: Referrer cannot be the zero address");
+        require(!users[msg.sender].isRegistered, "Hicapera: User already registered");
+        require(users[_referrer].isRegistered, "Hicapera: Referrer not found");
+        // require(!usedNonces[_nonce], "Hicapera: Signature nonce already used");
+
+        // bytes32 messageHash = keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", keccak256(abi.encode(msg.sender, _nonce))));
+        // address signer = ECDSA.recover(messageHash, _signature);
+        
+        // require(signer == _referrer, "Hicapera: Invalid referrer signature");
+        
+        // usedNonces[_nonce] = true;
+
+        users[msg.sender] = User({
+            isRegistered: true, referrer: _referrer, totalInvestment: 0, totalWithdrawn: 0,
+            maxWithdrawalLimit: 0, lastProfitClaimTimestamp: block.timestamp,
+            registrationTimestamp: block.timestamp, pendingReferralRewards: 0,
+            referrals: new address[](0)
+        });
+        users[_referrer].referrals.push(msg.sender);
+        emit Registered(msg.sender, _referrer);
+    }
+
+    
+    function invest(uint256 _amount, uint256 _deadline) external nonReentrant whenNotPaused {
+        require(block.timestamp <= _deadline, "Hicapera: Transaction deadline expired");
+        require(users[msg.sender].isRegistered, "Hicapera: User not registered");
+        require(_amount >= MINIMUM_INVESTMENT, "Hicapera: Amount less than minimum");
+        
+        usdtToken.safeTransferFrom(msg.sender, address(this), _amount);
+
+        User storage user = users[msg.sender];
+        if (user.totalInvestment == 0) {
+            user.lastProfitClaimTimestamp = block.timestamp;
+        }
+
+        user.totalInvestment += _amount;
+        user.maxWithdrawalLimit = user.totalInvestment * 2;
+        emit Invested(msg.sender, _amount);
+    }
+
+    function claimEarnings() external nonReentrant whenNotPaused {
+        User storage user = users[msg.sender];
+        require(user.isRegistered, "Hicapera: User not registered");
+
+        uint256 selfProfit = calculateSelfProfit(msg.sender);
+        uint256 referralRewards = user.pendingReferralRewards;
+        uint256 totalClaimable = selfProfit + referralRewards;
+        
+        require(totalClaimable > 0, "Hicapera: No earnings to claim");
+
+        uint256 remainingWithdrawalCapacity = user.maxWithdrawalLimit - user.totalWithdrawn;
+        require(remainingWithdrawalCapacity > 0, "Hicapera: 2X withdrawal limit reached");
+
+        uint256 amountToWithdraw;
+        if (totalClaimable > remainingWithdrawalCapacity) {
+            // The user's claimable earnings exceed their remaining 2X limit.
+            // They will only withdraw what's left of their capacity.
+            amountToWithdraw = remainingWithdrawalCapacity;
+        } else {
+            // The user's claim is within their 2X limit.
+            amountToWithdraw = totalClaimable;
+        }
+
+        // Effects
+        user.lastProfitClaimTimestamp += (block.timestamp - user.lastProfitClaimTimestamp) / MONTH_IN_SECONDS * MONTH_IN_SECONDS;
+        user.pendingReferralRewards = totalClaimable - amountToWithdraw; // Keep remainder if any
+        user.totalWithdrawn += amountToWithdraw;
+        
+        if (selfProfit > 0) {
+            distributeReferralIncome(msg.sender, selfProfit);
+        }
+
+        // Interaction
+        usdtToken.safeTransfer(msg.sender, amountToWithdraw);
+        emit EarningsClaimed(msg.sender, amountToWithdraw, selfProfit, referralRewards);
+    }
+
+    // View Functions
+    function calculateSelfProfit(address _user) public view returns (uint256) {
+        User storage user = users[_user];
+        if (user.totalInvestment == 0) return 0;
+
+        uint256 timeSinceLastClaim = block.timestamp - user.lastProfitClaimTimestamp;
+        uint256 monthsToClaim = timeSinceLastClaim / MONTH_IN_SECONDS;
+        if (monthsToClaim == 0) return 0;
+        
+        uint256 profitRate = getProfitRate(_user);
+        
+        uint256 totalProfit = (user.totalInvestment).mulDiv(profitRate, PRECISION_FACTOR);
+        return totalProfit * monthsToClaim;
+    }
+
+    function getProfitRate(address _user) public view returns (uint256) {
+        uint256 timeSinceRegistration = block.timestamp - users[_user].registrationTimestamp;
+        
+        if (timeSinceRegistration < 1 * YEAR_IN_SECONDS) return selfProfitRates[0];
+        if (timeSinceRegistration < 2 * YEAR_IN_SECONDS) return selfProfitRates[1];
+        if (timeSinceRegistration < 3 * YEAR_IN_SECONDS) return selfProfitRates[2];
+        return selfProfitRates[3];
+    }
+    
+    function getUserInfo(address _user) external view returns (User memory) {
+        return users[_user];
+    }
+    
+    // Internal & Owner Functions
+    function distributeReferralIncome(address _user, uint256 _profitAmount) internal {
+        address currentReferrer = users[_user].referrer;
+        for (uint i = 0; i < MAX_DISTRIBUTION_DEPTH; i++) {
+            if (currentReferrer == address(0) || i >= levelPercentages.length) break;
+
+            uint256 commission = _profitAmount.mulDiv(levelPercentages[i], PRECISION_FACTOR);
+            
+            if (commission > 0) {
+                users[currentReferrer].pendingReferralRewards += commission;
+                emit ReferralIncomeDistributed(_user, currentReferrer, commission, i + 1);
+            }
+            currentReferrer = users[currentReferrer].referrer;
+        }
+    }
+
+    function emergencyWithdraw(uint256 _amount) external onlyOwner nonReentrant {
+        usdtToken.safeTransfer(owner(), _amount);
+    }
+}
+
+
+    

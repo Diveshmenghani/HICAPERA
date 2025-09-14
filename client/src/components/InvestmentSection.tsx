@@ -1,20 +1,18 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useContext } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { CheckCircle } from 'lucide-react';
-import { useWeb3 } from '../hooks/useWeb3';
-import { useContract } from '../hooks/useContract';
+import { StateContext } from '@/contexts/StateContext';
 import { useToast } from '@/hooks/use-toast';
 
 export default function InvestmentSection() {
   const [amount, setAmount] = useState('');
   const [deadline, setDeadline] = useState('');
   const [usdtBalance, setUsdtBalance] = useState('0.00');
-  const { account, isConnected } = useWeb3();
-  const { investAmount, isLoading, getUSDTBalance } = useContract();
+  const { address, isConnected, investAmount, isLoading, getUSDTBalance } = useContext(StateContext) || {};
   const { toast } = useToast();
 
   const benefits = [
@@ -52,8 +50,8 @@ export default function InvestmentSection() {
 
     // Load USDT balance
     const loadBalance = async () => {
-      if (isConnected && account) {
-        const result = await getUSDTBalance(account);
+      if (isConnected && address) {
+        const result = await getUSDTBalance?.(address);
         if (result.success) {
           setUsdtBalance(parseFloat(result.data).toFixed(2));
         }
@@ -61,7 +59,7 @@ export default function InvestmentSection() {
     };
 
     loadBalance();
-  }, [isConnected, account, getUSDTBalance]);
+  }, [isConnected, address, getUSDTBalance]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -120,7 +118,7 @@ export default function InvestmentSection() {
         description: "Please confirm the transaction in your wallet",
       });
 
-      const result = await investAmount(investmentAmount, deadline);
+      const result = await investAmount?.(investmentAmount, deadline);
       
       if (result.success) {
         toast({
@@ -129,7 +127,7 @@ export default function InvestmentSection() {
         });
         setAmount('');
         // Reload balance
-        const balanceResult = await getUSDTBalance(account);
+        const balanceResult = await getUSDTBalance?.(address);
         if (balanceResult.success) {
           setUsdtBalance(parseFloat(balanceResult.data).toFixed(2));
         }

@@ -1,11 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useContext } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Copy } from 'lucide-react';
-import { useWeb3 } from '../hooks/useWeb3';
+import { StateContext } from '@/contexts/StateContext';
 import { useToast } from '@/hooks/use-toast';
 
 interface ReferralStats {
@@ -25,15 +25,15 @@ interface NetworkLevel {
 }
 
 export default function ReferralSection() {
-  const { account, isConnected } = useWeb3();
+  const { address, isConnected } = useContext(StateContext) || {};
   const { toast } = useToast();
   const [referralStats, setReferralStats] = useState<ReferralStats>({
     totalReferrals: 0,
     totalEarnings: '0',
   });
 
-  const referralLink = account 
-    ? `${window.location.origin}/ref/${account}`
+  const referralLink = address 
+    ? `${window.location.origin}/ref/${address}`
     : 'https://hicaperamlm.com/ref/0x1234...';
 
   const networkLevels: NetworkLevel[] = [
@@ -76,7 +76,7 @@ export default function ReferralSection() {
       totalReferrals: 0,
       totalEarnings: '0',
     });
-  }, [account]);
+  }, [address]);
 
   const copyReferralLink = async () => {
     try {

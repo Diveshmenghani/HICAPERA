@@ -1,10 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useContext } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import { useWeb3 } from '../hooks/useWeb3';
-import { useContract } from '../hooks/useContract';
+import { StateContext } from '@/contexts/StateContext';
 import { useToast } from '@/hooks/use-toast';
 
 interface EarningsData {
@@ -23,8 +22,7 @@ interface EarningsData {
 }
 
 export default function EarningsSection() {
-  const { account, isConnected } = useWeb3();
-  const { claimEarnings, isLoading, getUserInfo, calculateSelfProfit } = useContract();
+  const { address, isConnected, claimEarnings, isLoading, getUserInfo, calculateSelfProfit } = useContext(StateContext) || {};
   const { toast } = useToast();
   
   const [earnings, setEarnings] = useState<EarningsData>({
@@ -56,12 +54,12 @@ export default function EarningsSection() {
 
   useEffect(() => {
     const loadEarningsData = async () => {
-      if (!isConnected || !account) return;
+      if (!isConnected || !address) return;
 
       try {
         const [userInfoResult, profitResult] = await Promise.all([
-          getUserInfo(account),
-          calculateSelfProfit(account)
+          getUserInfo?.(address),
+          calculateSelfProfit?.(address)
         ]);
 
         if (userInfoResult.success) {
@@ -99,7 +97,7 @@ export default function EarningsSection() {
     };
 
     loadEarningsData();
-  }, [isConnected, account, getUserInfo, calculateSelfProfit]);
+  }, [isConnected, address, getUserInfo, calculateSelfProfit]);
 
   const handleClaimEarnings = async () => {
     try {
@@ -135,7 +133,7 @@ export default function EarningsSection() {
         description: "Please confirm the transaction in your wallet",
       });
 
-      const result = await claimEarnings();
+      const result = await claimEarnings?.();
       
       if (result.success) {
         toast({
